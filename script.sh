@@ -20,7 +20,7 @@ read smtp_password
 
 # --------------------------------[[INSTALLATION D'ECLIPSE]--------------------------------[
 
-apt update
+#apt update
 
 # Installation de Java Development Kit
 apt install openjdk-11-jdk
@@ -36,7 +36,7 @@ tar -xzf /tmp/eclipse.tar.gz -C /usr/local/share
 chown -R root:root /usr/local/share/eclipse
 
 # Création d'u lien symbolique vers l'exécutable d'Eclipse
-ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
+#ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
 
 # Boucle de lecture sur le fichier account.csv (excepté la première)
 tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
@@ -81,7 +81,7 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
               
     # Envoi de l'e-mail via le serveur SMTP
     subject="Votre compte a été créé"
-    ssh -n aaugus25@10.30.48.100 "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
+    ssh -n -i /home/isen/.ssh/id_rsa aaugus25@10.30.48.100 "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
 
 done 
 
@@ -89,6 +89,8 @@ done
 chown root:root /home/shared
 chmod 755 /home/shared
 
+
+# ssh copy id
 
 
 
