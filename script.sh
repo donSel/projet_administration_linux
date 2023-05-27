@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Définition des variables
+SERVER_IP=10.30.48.100
+SERVER_USER="aaugus25"
+FILE="accounts.csv"
+    
+# Ajout de la clés SSH publique dans le fichier authorized_keys du serveur distant  
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+scp ~/.ssh/id_rsa.pub aaugus25@10.30.48.100:/home/aaugus25
+
 # --------------------------------[CREATION DES DOSSIER ET UTILISATEURS]--------------------------------[
 
 # Création du fichier shared appartenant à root 
@@ -64,6 +73,18 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     
     # Création d'un lien symbolique vers eclipse dans le dossier home de l'utilisateur
     ln -s /usr/local/share/eclipse/eclipse "/home/$username/eclipse"
+    
+    # Création des dossier ".ssh" pour l'utilisateur    
+    mkdir "/home/$username/.ssh"
+    chmod 700 "/home/$username/.ssh"
+    chown -R "$username:$username" "/home/$username/.ssh"
+
+    # Création d'une clé SSH pour l'utilisateur
+    ssh-keygen -t rsa -f "/home/$username/.ssh/id_rsa" -q -N ""
+    #ssh-keygen -t rsa -b 2048 -N "" -f "$ssh_dir/id_rsa"
+
+    # Ajout de la clé publique de l'utilisateur dans le fichier authorized_keys distant
+    ssh-copy-id -i "/home/$username/.ssh/id_rsa.pub" aaugus25@10.30.48.100
 
     # --------------------------------[ENVOI DE MAIL]--------------------------------
     
@@ -90,7 +111,6 @@ chown root:root /home/shared
 chmod 755 /home/shared
 
 
-# ssh copy id
 
 
 
