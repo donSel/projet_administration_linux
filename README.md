@@ -1,6 +1,6 @@
 # projet_administration_linux
 
-Ce projet à pour objectif de déployer des comptes pour un ensembles d'utilisateurs (dont les informations sont contenues dans le fichier ```accoun.csv```)
+Ce projet à pour objectif de déployer des comptes pour un ensembles d'utilisateurs (dont les informations sont contenues dans le fichier ```account.csv```)
 grâce à un unique script bash.
 
 La création de compte comprend :
