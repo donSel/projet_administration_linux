@@ -130,6 +130,39 @@ iptables -A INPUT -p tcp --dport 21 -j DROP
 iptables -A OUTPUT -p udp -j DROP
 iptables -A INPUT -p udp -j DROPge du pare-feu
 
+# --------------------------------[SEAUVEGARDE SUR LE SERVEUR DISTANT]--------------------------------
+
+# Ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder les fichier du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant
+crontab -l > newcron
+echo "0 23 * * 1-5 tar -czf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
+crontab newcron
+rm newcron
+
+# --------------------------------[RETABLISSEMENT DE LA SEAUVEGARDE SUR LE SERVEUR DISTANT]--------------------------------< 
+
+# Création du script de récupération de la seauvegarde
+touch /home/retablir_sauvegarde.sh
+echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
+
+# Récupération de l'utilisateur courant
+echo "username=$(whoami)" >> /home/retablir_sauvegarde.sh
+
+# Récupération de la sauvegarde du répertoire "a_sauver" de l'utilisateur
+echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_$username.tgz /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+
+# Suppression du contenu du répertoire "a_sauver" de l'utilisateur
+echo "rm -rf /home/$username/a_sauver/" >> /home/retablir_sauvegarde.sh
+
+# Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
+echo "tar -xzf /home/$username/save_$username.tgz -C /home/$username/a_sauver" >> /home/retablir_sauvegarde.sh
+
+# Suppression de la sauvegarde
+echo "rm /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+
+# Modification des droits du script
+chown root:root /home/retablir_sauvegarde.sh
+chmod 755 /home/retablir_sauvegarde.sh
+
 
 
 
