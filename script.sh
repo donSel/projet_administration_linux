@@ -110,20 +110,13 @@ ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
 
 # --------------------------------[PARE-FEU]--------------------------------[
 
-#Installation du pare-feu
-apt install ufw -y
+# Blocage des connexions FTP
+iptables -A OUTPUT -p tcp --dport 21 -j DROP
+iptables -A INPUT -p tcp --dport 21 -j DROP
 
-# Activation du pare-feu
-ufw enable
-
-# BLoquage des connexion FTP
-ufw deny ftp 
-
-# Bloquage des connexions UDP
-ufw deny proto udp from any to any
-
-# Redémarage du pare-feu
-ufw reload
+# Blocage des connexions UDP 
+iptables -A OUTPUT -p udp -j DROP
+iptables -A INPUT -p udp -j DROPge du pare-feu
 
 
 
