@@ -108,6 +108,24 @@ chown -R root:root /usr/local/share/eclipse
 ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
 
 
+# --------------------------------[PARE-FEU]--------------------------------[
+
+#Installation du pare-feu
+apt install ufw -y
+
+# Activation du pare-feu
+ufw enable
+
+# BLoquage des connexion FTP
+ufw deny ftp 
+
+# Bloquage des connexions UDP
+ufw deny proto udp from any to any
+
+# Redémarage du pare-feu
+ufw reload
+
+
 
 
 
