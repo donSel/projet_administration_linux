@@ -34,13 +34,20 @@ ask_values() {
 
 # Fonction de déploiement du pare-feu
 firewall_setup() {
-    # Blocage des connexions FTP
-    iptables -A OUTPUT -p tcp --dport 21 -j DROP
-    iptables -A INPUT -p tcp --dport 21 -j DROP
-
-    # Blocage des connexions UDP 
-    iptables -A OUTPUT -p udp -j DROP
-    iptables -A INPUT -p udp -j DROP
+    # Installation d'ufw
+    apt install ufw -y
+    
+    # Activation de ufw
+    ufw enable
+    
+    # Bloquage des connexions de type FTP
+    ufw deny ftp 
+    
+    # Bloquage des connexions de type UDP
+    ufw deny proto udp from any to any
+    
+    # Redemarrage du pare-feu
+    ufw reload
 }
 
 # Fonction installant Eclipse sans apt
