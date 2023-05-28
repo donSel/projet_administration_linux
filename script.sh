@@ -64,6 +64,29 @@ eclipse_install() {
     ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
 }
 
+# Fonction configurant installant et configurant Nextcloud
+config_nextcloud() {
+    # Variables d'dentifiant et mdp de l'administrateur pour la connexion au serveur Nextcloud
+    admin_login="nextcloud-admin"
+    admin_passwd="N3x+ClOuD"
+
+    # Installation de snapd
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "apt install snapd -y"
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install core"
+
+    # Installation de Nextcloud
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install nextcloud"
+    
+    # Lancement de Nextcloud 
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "/snap/bin/nextcloud.manual-install $admin_login $admin_passwd"
+
+    # Création de l'exécutable pour lancer le tunnel sur le serveur Nextcloud
+    touch /home/tunnel_nextcloud
+    chmod 755 /home/tunnel_nextcloud
+    echo "#!/bin/bash" >> /home/tunnel_nextcloud
+    echo "ssh -L 4242:$SERVER_IP:80 $SERVER_USER@$SERVER_IP" >> /home/tunnel_nextcloud
+}
+
 # --------------------------------[END_FONNCTIONS]--------------------------------[
 
 ask_values
@@ -83,7 +106,7 @@ ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" mkdir "/home/saves"
 ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chown "$SERVER_USER:$SERVER_USER" "/home/saves"
 ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chmod 777 "/home/saves"
 
-#eclipse_install
+eclipse_install
 
 # Boucle de lecture sur le fichier account.csv (excepté la première)
 tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
@@ -141,7 +164,7 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     Cordialement"
     
     # Envoi de l'e-mail via le serveur SMTP
-    ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
+    #ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
              
     # --------------------------------------- ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder ---------------------------------------
     # --------------------------------------- les fichiers du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant ---------------------------------------
@@ -158,6 +181,10 @@ firewall_setup
 touch /home/retablir_sauvegarde.sh
 echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
 
+# Modification des droits du script
+chown root:root /home/retablir_sauvegarde.sh
+chmod 755 /home/retablir_sauvegarde.sh
+
 # Récupération de l'utilisateur courant => demander le user sa mère
 echo "username=$(whoami)" >> /home/retablir_sauvegarde.sh
 
@@ -168,14 +195,13 @@ echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_\$username.tgz /h
 echo "rm -rf /home/\$username/a_sauver/" >> /home/retablir_sauvegarde.sh
 
 # Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
-echo "tar -xzvf /home/\$username/save_\$username.tgz -C /home/\$username/a_sauver" >> /home/retablir_sauvegarde.sh
+echo "tar -xzvf /home/\$username/save_\$username.tgz -C /home/\$username" >> /home/retablir_sauvegarde.sh
 
 # Suppression de la sauvegarde
 echo "rm /home/\$username/save_\$username.tgz" >> /home/retablir_sauvegarde.sh
 
-# Modification des droits du script
-chown root:root /home/retablir_sauvegarde.sh
-chmod 755 /home/retablir_sauvegarde.sh
+
+config_nextcloud
 
 
 
