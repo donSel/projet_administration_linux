@@ -66,7 +66,7 @@ eclipse_install() {
 
 # --------------------------------[END_FONNCTIONS]--------------------------------[
 
-ask_values
+#ask_values
 
 # Définition des mes variables
 SERVER_IP=10.30.48.100
@@ -109,33 +109,33 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     # --------------------------------------- création de compte d'utilisateur avec ses dossier, ses droits et sa configuration ssh ---------------------------------------
 
     # Création du compte utilisateur avec mdp 
-    useradd -m -p "$(openssl passwd -1 "$password")" "$username"
+    #useradd -m -p "$(openssl passwd -1 "$password")" "$username"
     
     # Expiration du mot de passe
-    usermod -e 2000-01-01 "$username"
+    #usermod -e 2000-01-01 "$username"
     
     # Création d'un dossier dans le dossier "shared"
-    mkdir "/home/shared/$username"
-    chown "$username" "/home/shared/$username"
-    chmod 755 "/home/shared/$username"
+    #mkdir "/home/shared/$username"
+    #chown "$username" "/home/shared/$username"
+    #chmod 755 "/home/shared/$username"
 
     # Création des dossier ".ssh" pour l'utilisateur    
-    mkdir "/home/$username/.ssh"
-    chmod 700 "/home/$username/.ssh"
+    #mkdir "/home/$username/.ssh"
+    #chmod 700 "/home/$username/.ssh"
 
     # Création d'une clé SSH pour l'utilisateur
-    ssh-keygen -t rsa -b 2048 -f "/home/$username/.ssh/id_rsa" -q -N ""
-    chown -R "$username:$username" "/home/$username/.ssh"
+    #ssh-keygen -t rsa -b 2048 -f "/home/$username/.ssh/id_rsa" -q -N ""
+    #chown -R "$username:$username" "/home/$username/.ssh"
 
     # Ajout de la clé publique de l'utilisateur dans le fichier authorized_keys distant
-    ssh-copy-id -i "/home/$username/.ssh/id_rsa.pub" $SERVER_USER@$SERVER_IP
+    #ssh-copy-id -i "/home/$username/.ssh/id_rsa.pub" $SERVER_USER@$SERVER_IP
     
     # Création du dossier "a_sauver" dans le dossier home de l'utilisateur
-    mkdir -m 755 "/home/$username/a_sauver"
-    chown "$username" "/home/$username/a_sauver"
+    #mkdir -m 755 "/home/$username/a_sauver"
+    #chown "$username" "/home/$username/a_sauver"
     
     # Création d'un lien symbolique vers eclipse dans le dossier home de l'utilisateur
-    ln -s /usr/local/share/eclipse/eclipse "/home/$username/eclipse"
+    #ln -s /usr/local/share/eclipse/eclipse "/home/$username/eclipse"
     
     # --------------------------------------- Envoi de mails d'instruction aux utilisateurs ---------------------------------------
     subject="Votre compte a été créé"
@@ -153,7 +153,7 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     Cordialement"
     
     # Envoi de l'e-mail via le serveur SMTP
-    ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
+    #ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
              
     # --------------------------------------- ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder ---------------------------------------
     # --------------------------------------- les fichiers du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant ---------------------------------------
