@@ -4,6 +4,10 @@
 SERVER_IP=10.30.48.100
 SERVER_USER="aaugus25"
 FILE="accounts.csv"
+SSH_KEY="/home/isen/.ssh/id_rsa"
+
+# Démarrage de la tâche cron
+service cron start
 
 # --------------------------------[CREATION DES DOSSIER ET UTILISATEURS]--------------------------------[
 
@@ -84,6 +88,14 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     # Envoi de l'e-mail via le serveur SMTP
     subject="Votre compte a été créé"
     ssh -n -i /home/isen/.ssh/id_rsa "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
+    
+    # --------------------------------[SEAUVEGARDE]--------------------------------
+
+    # Ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder les fichier du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant
+    crontab -l > newcron
+    echo "0 23 * * 1-5 tar -czf /home/$username/save_$username.tgz /home/$username/a_sauv && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
+    crontab newcron
+    rm newcron
     
 done 
 
