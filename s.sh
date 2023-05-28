@@ -34,13 +34,20 @@ ask_values() {
 
 # Fonction de déploiement du pare-feu
 firewall_setup() {
-    # Blocage des connexions FTP
-    iptables -A OUTPUT -p tcp --dport 21 -j DROP
-    iptables -A INPUT -p tcp --dport 21 -j DROP
-
-    # Blocage des connexions UDP 
-    iptables -A OUTPUT -p udp -j DROP
-    iptables -A INPUT -p udp -j DROP
+    # Installation d'ufw
+    apt install ufw -y
+    
+    # Activation de ufw
+    ufw enable
+    
+    # Bloquage des connexions de type FTP
+    ufw deny ftp 
+    
+    # Bloquage des connexions de type UDP
+    ufw deny proto udp from any to any
+    
+    # Redemarrage du pare-feu
+    ufw reload
 }
 
 # Fonction installant Eclipse sans apt
@@ -64,6 +71,29 @@ eclipse_install() {
     ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
 }
 
+# Fonction configurant installant et configurant Nextcloud
+config_nextcloud() {
+    # Variables d'dentifiant et mdp de l'administrateur pour la connexion au serveur Nextcloud
+    admin_login="nextcloud-admin"
+    admin_passwd="N3x+ClOuD"
+
+    # Installation de snapd
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "apt install snapd -y"
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install core"
+
+    # Installation de Nextcloud
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install nextcloud"
+    
+    # Lancement de Nextcloud 
+    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "/snap/bin/nextcloud.manual-install $admin_login $admin_passwd"
+
+    # Création de l'exécutable pour lancer le tunnel sur le serveur Nextcloud
+    touch /home/tunnel_nextcloud
+    chmod 755 /home/tunnel_nextcloud
+    echo "#!/bin/bash" >> /home/tunnel_nextcloud
+    echo "ssh -L 4242:$SERVER_IP:80 $SERVER_USER@$SERVER_IP" >> /home/tunnel_nextcloud
+}
+
 # --------------------------------[END_FONNCTIONS]--------------------------------[
 
 #ask_values
@@ -77,23 +107,22 @@ smtp_server="smtp.office365.com"
 smtp_port="587"
 # --
 from_email="mickael.neroda@isen-ouest.yncrea.fr"
-smtp_password="TCr4BMLuXBEmU5DSYVvFaK7WYY5gHKYKkfCc55pw9FJtofhwtFktdY5QKBQCZyCcLZYasRozH5n"
 mail="mickael.neroda@gmail.com"
 
 # Démarrage de la tâche cron
 service cron start
 
 # Création du fichier shared appartenant à root 
-#mkdir /home/shared
+mkdir /home/shared
 
 # Mise a jour des droits du fichier shared
-#chown root:root /home/shared
-#chmod 755 /home/shared
+chown root:root /home/shared
+chmod 755 /home/shared
 
 # Création du dossier "saves" sur la machine distante
-#ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" mkdir "/home/saves"
-#ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chown "$SERVER_USER:$SERVER_USER" "/home/saves"
-#ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chmod 777 "/home/saves"
+ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" mkdir "/home/saves"
+ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chown "$SERVER_USER:$SERVER_USER" "/home/saves"
+ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chmod 777 "/home/saves"
 
 #eclipse_install
 
@@ -109,33 +138,33 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     # --------------------------------------- création de compte d'utilisateur avec ses dossier, ses droits et sa configuration ssh ---------------------------------------
 
     # Création du compte utilisateur avec mdp 
-    #useradd -m -p "$(openssl passwd -1 "$password")" "$username"
+    useradd -m -p "$(openssl passwd -1 "$password")" "$username"
     
     # Expiration du mot de passe
-    #usermod -e 2000-01-01 "$username"
+    usermod -e 2000-01-01 "$username"
     
     # Création d'un dossier dans le dossier "shared"
-    #mkdir "/home/shared/$username"
-    #chown "$username" "/home/shared/$username"
-    #chmod 755 "/home/shared/$username"
+    mkdir "/home/shared/$username"
+    chown "$username" "/home/shared/$username"
+    chmod 755 "/home/shared/$username"
 
     # Création des dossier ".ssh" pour l'utilisateur    
-    #mkdir "/home/$username/.ssh"
-    #chmod 700 "/home/$username/.ssh"
+    mkdir "/home/$username/.ssh"
+    chmod 700 "/home/$username/.ssh"
 
     # Création d'une clé SSH pour l'utilisateur
-    #ssh-keygen -t rsa -b 2048 -f "/home/$username/.ssh/id_rsa" -q -N ""
-    #chown -R "$username:$username" "/home/$username/.ssh"
+    ssh-keygen -t rsa -b 2048 -f "/home/$username/.ssh/id_rsa" -q -N ""
+    chown -R "$username:$username" "/home/$username/.ssh"
 
     # Ajout de la clé publique de l'utilisateur dans le fichier authorized_keys distant
-    #ssh-copy-id -i "/home/$username/.ssh/id_rsa.pub" $SERVER_USER@$SERVER_IP
+    ssh-copy-id -i "/home/$username/.ssh/id_rsa.pub" $SERVER_USER@$SERVER_IP
     
     # Création du dossier "a_sauver" dans le dossier home de l'utilisateur
-    #mkdir -m 755 "/home/$username/a_sauver"
-    #chown "$username" "/home/$username/a_sauver"
+    mkdir -m 755 "/home/$username/a_sauver"
+    chown "$username" "/home/$username/a_sauver"
     
     # Création d'un lien symbolique vers eclipse dans le dossier home de l'utilisateur
-    #ln -s /usr/local/share/eclipse/eclipse "/home/$username/eclipse"
+    ln -s /usr/local/share/eclipse/eclipse "/home/$username/eclipse"
     
     # --------------------------------------- Envoi de mails d'instruction aux utilisateurs ---------------------------------------
     subject="Votre compte a été créé"
@@ -153,13 +182,13 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     Cordialement"
     
     # Envoi de l'e-mail via le serveur SMTP
-    #ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
+    ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
              
     # --------------------------------------- ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder ---------------------------------------
     # --------------------------------------- les fichiers du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant ---------------------------------------
     crontab -l > newcron
-    echo "* * * * * tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
     #echo "0 23 * * 1-5 tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
+    echo "* * * * * tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" && rm /home/$username/save_$username.tgz" >> newcron
     crontab newcron
     rm newcron
     
@@ -171,24 +200,28 @@ done
 touch /home/retablir_sauvegarde.sh
 echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
 
+# Modification des droits du script
+chown root:root /home/retablir_sauvegarde.sh
+chmod 755 /home/retablir_sauvegarde.sh
+
 # Récupération de l'utilisateur courant => demander le user sa mère
 echo "username=$(whoami)" >> /home/retablir_sauvegarde.sh
 
 # Récupération de la sauvegarde du répertoire "a_sauver" de l'utilisateur
-echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_$username.tgz /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_\$username.tgz /home/\$username/save_\$username.tgz" >> /home/retablir_sauvegarde.sh
 
 # Suppression du contenu du répertoire "a_sauver" de l'utilisateur
-echo "rm -rf /home/$username/a_sauver/" >> /home/retablir_sauvegarde.sh
+echo "rm -rf /home/\$username/a_sauver/" >> /home/retablir_sauvegarde.sh
 
 # Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
-echo "tar -xzvf /home/$username/save_$username.tgz -C /home/$username/a_sauver" >> /home/retablir_sauvegarde.sh
+echo "tar -xzvf /home/\$username/save_\$username.tgz -C /home/\$username" >> /home/retablir_sauvegarde.sh
 
 # Suppression de la sauvegarde
-echo "rm /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+echo "rm /home/\$username/save_\$username.tgz" >> /home/retablir_sauvegarde.sh
 
-# Modification des droits du script
-chown root:root /home/retablir_sauvegarde.sh
-chmod 755 /home/retablir_sauvegarde.sh
+#config_nextcloud
+
+
 
 
 
