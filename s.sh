@@ -188,7 +188,7 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     # --------------------------------------- les fichiers du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant ---------------------------------------
     crontab -l > newcron
     #echo "0 23 * * 1-5 tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
-    echo "* * * * * tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" && rm /home/$username/save_$username.tgz" >> newcron
+    echo "* * * * * tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/ && rm /home/$username/save_$username.tgz" >> newcron
     crontab newcron
     rm newcron
     
