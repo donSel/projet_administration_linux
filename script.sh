@@ -46,7 +46,7 @@ firewall_setup() {
     # Bloquage des connexions de type UDP
     ufw deny proto udp from any to any
     
-    # Redemarrage du pare-feu
+    # Redémarrage du pare-feu
     ufw reload
 }
 
