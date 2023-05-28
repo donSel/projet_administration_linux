@@ -46,7 +46,7 @@ firewall_setup() {
     # Bloquage des connexions de type UDP
     ufw deny proto udp from any to any
     
-    # Redémarrage du pare-feu
+    # Redemarrage du pare-feu
     ufw reload
 }
 
@@ -73,7 +73,7 @@ eclipse_install() {
 
 # Fonction configurant installant et configurant Nextcloud
 config_nextcloud() {
-    # Variables d'dentifiant et mdp de l'administrateur pour la connexion au serveur Nextcloud
+    # Variables d'identifiant et mdp de l'administrateur pour la connexion au serveur Nextcloud
     admin_login="nextcloud-admin"
     admin_passwd="N3x+ClOuD"
 
@@ -171,12 +171,12 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     Cordialement"
     
     # Envoi de l'e-mail via le serveur SMTP
-    #ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
+    ssh -n -i "$SSH_KEY" "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
              
     # --------------------------------------- ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder ---------------------------------------
     # --------------------------------------- les fichiers du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant ---------------------------------------
     crontab -l > newcron
-    echo "0 23 * * 1-5 tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
+    echo "0 23 * * 1-5 tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/ && rm /home/$username/save_$username.tgz" >> newcron
     crontab newcron
     rm newcron
     
@@ -184,7 +184,11 @@ done
 
 firewall_setup
 
+config_nextcloud
+
 # --------------------------------------- création du script de récupération de la seauvegarde "recuperation_seauvegarde.sh" ---------------------------------------
+
+# Création du fichier retablir seauvegarde
 touch /home/retablir_sauvegarde.sh
 echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
 
@@ -192,8 +196,9 @@ echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
 chown root:root /home/retablir_sauvegarde.sh
 chmod 755 /home/retablir_sauvegarde.sh
 
-# Récupération de l'utilisateur courant => demander le user sa mère
-echo "username=$(whoami)" >> /home/retablir_sauvegarde.sh
+# Récupération du nom d'utilisateur à qui l'on veut récuperer les fichiers du dossier "a_sauver" distant
+echo "echo \"Veuillez saisir le login de l'utilisateur à qui vous voulez rétablir le dossier "a_sauver" :\"" >> /home/retablir_sauvegarde.sh
+echo "read username" >> /home/retablir_sauvegarde.sh
 
 # Récupération de la sauvegarde du répertoire "a_sauver" de l'utilisateur
 echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_\$username.tgz /home/\$username/save_\$username.tgz" >> /home/retablir_sauvegarde.sh
@@ -204,11 +209,20 @@ echo "rm -rf /home/\$username/a_sauver/" >> /home/retablir_sauvegarde.sh
 # Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
 echo "tar -xzvf /home/\$username/save_\$username.tgz -C /home/\$username" >> /home/retablir_sauvegarde.sh
 
-# Suppression de la sauvegarde
+# Suppression de l'archive
 echo "rm /home/\$username/save_\$username.tgz" >> /home/retablir_sauvegarde.sh
 
+# Recréation du dossier a_sauver
+echo "mkdir a_sauver" >> /home/retablir_sauvegarde.sh
 
-config_nextcloud
+# Déplacement des données extraites dans le nouveau dossier
+echo "mv /home/\$username/home/\$username/a_sauver /home/\$username/a_sauver" >> /home/retablir_sauvegarde.sh
+
+# Suppression de l'ancien dossier home extrait
+echo "rm -r -d /home/\$username/home/" >> /home/retablir_sauvegarde.sh
+
+
+
 
 
 
