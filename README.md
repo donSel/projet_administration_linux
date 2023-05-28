@@ -20,3 +20,12 @@ La création de compte comprend :
 ```sudo ./script.sh```
 - Le script ```prep.sh``` permet simplement de supprimer les utilisateurs et dossiers créés par le script ```script.sh``` sur la machine locale excepté l'utilisateur "isen"
 
+# Rétablissement de seauvegarde
+
+Afin de rétablir la une seauvegarde automatique d'un dossier ```a_sauver``` d'un utilisateur sur le serveur distant il sera nécessaire d'éxecuter le script ```retablir_seauvegarde.sh``` se trouvant dans votre ```/home``` avec la commande :
+```sudo ./retablir_seauvegarde```` 
+Il vous sera demandé de rentrer le login de l'utilisateur à qui vous voulez rétablir la seauvegarde. A ce moment le contenu du dossier ```a_sauver``` de l'utilisateur choisi sera remplacé par le contenu de l'archive décompressé présent sur le serveur distant.
+
+# Serveur Nextcloud
+
+Pour avoir accès au serveur Nextcloud ils vous sera nécessaire de créer le tunnel ssh grâce au script ```tunnel_nextcloud``` du répertoire ```home``
