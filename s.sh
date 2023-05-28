@@ -10,6 +10,7 @@ SERVER_IP=10.30.48.100
 SERVER_USER="aaugus25"
 SSH_KEY="/home/isen/.ssh/id_rsa"
 FILE="accounts.csv"
+subject="Votre compte a été créé"
 
 # Démarrage de la tâche cron
 service cron start
@@ -97,20 +98,41 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     Cordialement"
     
     # Envoi de l'e-mail via le serveur SMTP
-    #subject="Votre compte a été créé"
     #ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
     
-    # --------------------------------[SEAUVEGARDE]--------------------------------
+    # --------------------------------[SEAUVEGARDE SUR LE SERVEUR DISTANT]--------------------------------
 
     # Ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder les fichier du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant
     crontab -l > newcron
-    echo "0 23 * * 1-5 tar -czf /home/$username/save_$username.tgz /home/$username/a_sauv && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
+    echo "0 23 * * 1-5 tar -czf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
     crontab newcron
     rm newcron
     
-    # Récupération de la seauvegarde
+    # --------------------------------[RETABLISSEMENT DE LA SEAUVEGARDE SUR LE SERVEUR DISTANT]--------------------------------< 
     
-     
+    # Création du script de récupération de la seauvegarde
+    touch /home/retablir_sauvegarde.sh
+    echo "#!/bin/sh" > /home/retablir_sauvegarde.sh
+    
+    # Récupération de l'utilisateur courant
+    echo "username=$(whoami)" > /home/retablir_sauvegarde.sh
+    
+    # Récupération de la sauvegarde du répertoire "a_sauver" de l'utilisateur
+    echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_$username.tgz /home/$username/save_$username.tgz" > /home/retablir_sauvegarde.sh
+    
+    # Suppression du contenu du répertoire "a_sauver" de l'utilisateur
+    echo "rm -rf /home/$username/a_sauver/" > /home/retablir_sauvegarde.sh
+    
+    # Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
+    echo "tar -xzf /home/$username/save_$username.tgz -C /home/$username/a_sauver" > /home/retablir_sauvegarde.sh
+    
+    # Suppression de la sauvegarde
+    echo "rm /home/$username/save_$username.tgz" > /home/retablir_sauvegarde.sh
+    
+    # Modification des droits du script
+    chown root:root /home/retablir_sauvegarde.sh
+    chmod 755 /home/retablir_sauvegarde.sh
+         
 done 
 
 # --------------------------------[PARE-FEU]--------------------------------[
