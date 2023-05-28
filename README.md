@@ -16,7 +16,7 @@ La création de compte comprend :
 
 # Utilisation 
 
-Le script ```script.sh``` sera lancé depuis une machine locale qui est connectée à la machine SSH (10.38.40.100) en tant que root :
+- Le script ```script.sh``` sera lancé depuis une machine locale qui est connectée à la machine SSH (10.38.40.100) en tant que root :
 ```sudo ./script.sh```
-Par défaut le script exécute les commandes sur le serveur en tant qu'utilisateur ```aaugus25``` (Alexandre Auguste m'a gentiment prêté sont login et mdp du serveur
-vu que j'avais perdu mon mdp =/)
+- Le script ```prep.sh``` permet simplement de supprimer les utilisateurs et dossiers créés par le script ```script.sh``` sur la machine locale excepté l'utilisateur "isen"
+
