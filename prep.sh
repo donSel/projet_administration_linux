@@ -22,3 +22,5 @@ for user in /home/*; do
 done
 
 sudo rm -r /home/shared
+
+# --------------------- / SUPPRESSION DES UTILISATEURS ET DOSSIERS CREES SUR LE SERVEUR DISTANT \ ---------------------
