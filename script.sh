@@ -32,24 +32,6 @@ ask_values() {
     read FILE
 } 
 
-# Fonction d'envoi de mails d'instruction aux utilisateurs
-send_mail() {
-    # Création du corps du mail
-    body="Bonjour $name $surname,
-    
-    Votre compte utilisateur a été créé avec succès !
-    
-    Votre login : $username\n
-    Votre mot de passe de connexion : $password    
-
-    /!\ Attention : ce mot de passe devra être changé lors de votre première connexion.
-    
-    Cordialement"
-    
-    # Envoi de l'e-mail via le serveur SMTP
-    ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
-}
-
 # Fonction de déploiement du pare-feu
 firewall_setup() {
     # Blocage des connexions FTP
@@ -82,13 +64,37 @@ eclipse_install() {
     ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
 }
 
-# Fonction de création de compte d'utilisateur avec ses dossier, ses droits et sa configuration ssh
-create_users_account_directories_ssh_config() {
+# --------------------------------[END_FONNCTIONS]--------------------------------[
+
+ask_values
+
+# Démarrage de la tâche cron
+service cron start
+
+# Création du fichier shared appartenant à root 
+mkdir /home/shared
+
+# Mise a jour des droits du fichier shared
+chown root:root /home/shared
+chmod 755 /home/shared
+
+# Création du dossier "saves" sur la machine distante
+ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" mkdir "/home/saves"
+ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chown "$SERVER_USER:$SERVER_USER" "/home/saves"
+ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chmod 777 "/home/saves"
+
+eclipse_install
+
+# Boucle de lecture sur le fichier account.csv (excepté la première)
+tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
+
     # Suppression de l'espace dans le surname 
     surname="${surname// /}"
     
     # Géneration du login
     username="${name:0:1}${surname,,}"
+    
+    # --------------------------------------- création de compte d'utilisateur avec ses dossier, ses droits et sa configuration ssh ---------------------------------------
 
     # Création du compte utilisateur avec mdp 
     useradd -m -p "$(openssl passwd -1 "$password")" "$username"
@@ -118,79 +124,58 @@ create_users_account_directories_ssh_config() {
     
     # Création d'un lien symbolique vers eclipse dans le dossier home de l'utilisateur
     ln -s /usr/local/share/eclipse/eclipse "/home/$username/eclipse"
-}
+    
+    # --------------------------------------- Envoi de mails d'instruction aux utilisateurs ---------------------------------------
+    subject="Votre compte a été créé"
+    
+    # Création du corps du mail
+    body="Bonjour $name $surname,
+    
+    Votre compte utilisateur a été créé avec succès !
+    
+    Votre login : $username\n
+    Votre mot de passe de connexion : $password    
 
-# Fonction ajoutant de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder les fichier du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant
-create_cron_task_save_on_server() {
+    /!\ Attention : ce mot de passe devra être changé lors de votre première connexion.
+    
+    Cordialement"
+    
+    # Envoi de l'e-mail via le serveur SMTP
+    ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" "mail --subject \"$subject\"  --exec \"set sendmail=smtp://${from_email/@/%40}:${smtp_password/@/%40}@$smtp_server:$smtp_port\" --append \"From:$from_email\" $mail <<< \"$body\" "
+             
+    # --------------------------------------- ajout de la tâche cron s'exécutant tout les jours de la semaine à 23h pour seauvegarder ---------------------------------------
+    # --------------------------------------- les fichiers du dossier "a_sauver" de l'utilisateur sur le dossier "saves" du serveur distant ---------------------------------------
     crontab -l > newcron
-    echo "* * * * * tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
-    #echo "0 23 * * 1-5 tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
+    echo "0 23 * * 1-5 tar -czvf /home/$username/save_$username.tgz /home/$username/a_sauver && sudo chmod a+x /home/$username/save_$username.tgz && scp -i $SSH_KEY /home/$username/save_$username.tgz $SERVER_USER@$SERVER_IP:/home/saves/" >> newcron
     crontab newcron
     rm newcron
-}
-
-# Fonction qui crée lu script de récupération de la seauvegarde "recuperation_seauvegarde.sh"
-generation_script_recup_seauvegarde() {
-    touch /home/retablir_sauvegarde.sh
-    echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
-
-    # Récupération de l'utilisateur courant => demander le user sa mère
-    echo "username=$(whoami)" >> /home/retablir_sauvegarde.sh
-
-    # Récupération de la sauvegarde du répertoire "a_sauver" de l'utilisateur
-    echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_$username.tgz /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
-
-    # Suppression du contenu du répertoire "a_sauver" de l'utilisateur
-    echo "rm -rf /home/$username/a_sauver/" >> /home/retablir_sauvegarde.sh
-
-    # Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
-    echo "tar -xzvf /home/$username/save_$username.tgz -C /home/$username/a_sauver" >> /home/retablir_sauvegarde.sh
-
-    # Suppression de la sauvegarde
-    echo "rm /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
-
-    # Modification des droits du script
-    chown root:root /home/retablir_sauvegarde.sh
-    chmod 755 /home/retablir_sauvegarde.sh
-}
-
-# --------------------------------[END_FONNCTIONS]--------------------------------[
-
-ask_values
-
-# Démarrage de la tâche cron
-service cron start
-
-# --------------------------------[CREATION DES DOSSIER ET UTILISATEURS]--------------------------------[
-
-# Création du fichier shared appartenant à root 
-mkdir /home/shared
-
-# Mise a jour des droits du fichier shared
-chown root:root /home/shared
-chmod 755 /home/shared
-
-# Création du dossier "saves" sur la machine distante
-ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" mkdir "/home/saves"
-ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chown "$SERVER_USER:$SERVER_USER" "/home/saves"
-ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chmod 777 "/home/saves"
-
-eclipse_install
-
-# Boucle de lecture sur le fichier account.csv (excepté la première)
-tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
-
-    create_users_account_directories_ssh_config
-    
-    send_mail
-             
-    create_cron_task_save_on_server 
     
 done 
 
 firewall_setup
 
-generation_script_recup_seauvegarde
+# --------------------------------------- création du script de récupération de la seauvegarde "recuperation_seauvegarde.sh" ---------------------------------------
+touch /home/retablir_sauvegarde.sh
+echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
+
+# Récupération de l'utilisateur courant => demander le user sa mère
+echo "username=$(whoami)" >> /home/retablir_sauvegarde.sh
+
+# Récupération de la sauvegarde du répertoire "a_sauver" de l'utilisateur
+echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_$username.tgz /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+
+# Suppression du contenu du répertoire "a_sauver" de l'utilisateur
+echo "rm -rf /home/$username/a_sauver/" >> /home/retablir_sauvegarde.sh
+
+# Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
+echo "tar -xzvf /home/$username/save_$username.tgz -C /home/$username/a_sauver" >> /home/retablir_sauvegarde.sh
+
+# Suppression de la sauvegarde
+echo "rm /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+
+# Modification des droits du script
+chown root:root /home/retablir_sauvegarde.sh
+chmod 755 /home/retablir_sauvegarde.sh
 
 
 
