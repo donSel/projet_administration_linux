@@ -83,7 +83,7 @@ ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" mkdir "/home/saves"
 ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chown "$SERVER_USER:$SERVER_USER" "/home/saves"
 ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chmod 777 "/home/saves"
 
-eclipse_install
+#eclipse_install
 
 # Boucle de lecture sur le fichier account.csv (excepté la première)
 tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
@@ -162,16 +162,16 @@ echo "#!/bin/sh" >> /home/retablir_sauvegarde.sh
 echo "username=$(whoami)" >> /home/retablir_sauvegarde.sh
 
 # Récupération de la sauvegarde du répertoire "a_sauver" de l'utilisateur
-echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_$username.tgz /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+echo "scp -i $SSH_KEY $SERVER_USER@$SERVER_IP:/home/saves/save_\$username.tgz /home/\$username/save_\$username.tgz" >> /home/retablir_sauvegarde.sh
 
 # Suppression du contenu du répertoire "a_sauver" de l'utilisateur
-echo "rm -rf /home/$username/a_sauver/" >> /home/retablir_sauvegarde.sh
+echo "rm -rf /home/\$username/a_sauver/" >> /home/retablir_sauvegarde.sh
 
 # Extraction de la sauvegarde dans le répertoire "a_sauver" de l'utilisateur
-echo "tar -xzvf /home/$username/save_$username.tgz -C /home/$username/a_sauver" >> /home/retablir_sauvegarde.sh
+echo "tar -xzvf /home/\$username/save_\$username.tgz -C /home/\$username/a_sauver" >> /home/retablir_sauvegarde.sh
 
 # Suppression de la sauvegarde
-echo "rm /home/$username/save_$username.tgz" >> /home/retablir_sauvegarde.sh
+echo "rm /home/\$username/save_\$username.tgz" >> /home/retablir_sauvegarde.sh
 
 # Modification des droits du script
 chown root:root /home/retablir_sauvegarde.sh
