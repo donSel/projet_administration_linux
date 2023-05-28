@@ -2,36 +2,6 @@
 
 # --------------------------------[FONNCTIONS]--------------------------------[
 
-# Fonction demandan les information pour l'envoi de mail et les informations relatives au serveur
-ask_values() {
-    # Affichage du logo
-    echo "
-|/  | /                                          /  
-|___|   ___  ___       ___  ___       ___       (   
-|   )| |___)|   ) \  )|___)|   )|   )|___)      |   
-|__/ | |__  |  /   \/ |__  |  / |__/ |__        _  Mickaël Neroda. 2023  
-"
-    # Demande des des informations pour l'envoi de mail
-    echo "Veuillez saisir votre adresse de serveur smtp (pour Outlook : smtp.office365.com) :"
-    read smtp_server
-    echo "Veuillez saisir le port de votre serveur smtp (pour Outlook : 587) :"
-    read smtp_port
-    echo "Veuillez rentrer l'adresse email de l'expéditeur :"
-    read from_email
-    echo "Veuillez saisir le mot de passe de cette adresse e-mail :"
-    read smtp_password
-    
-    # Demande des informations relatives au serveur
-    echo "Veuillez saisir l'adresse IP du serveur :"
-    read SERVER_IP
-    echo "Veuillez saisir votre nom d'utilisateur :"
-    read SERVER_USER
-    echo "Veuillez rentrer le chemin vers votre clé SSH :"
-    read SSH_KEY
-    echo "Veuillez saisir le chemin vers le fichier csv contenant les informations des comptes :"
-    read FILE
-} 
-
 # Fonction de déploiement du pare-feu
 firewall_setup() {
     # Installation d'ufw
@@ -96,7 +66,25 @@ config_nextcloud() {
 
 # --------------------------------[END_FONNCTIONS]--------------------------------[
 
-ask_values
+# Demande des des informations pour l'envoi de mail
+echo "Veuillez saisir votre adresse de serveur smtp (pour Outlook : smtp.office365.com) :"
+read smtp_server
+echo "Veuillez saisir le port de votre serveur smtp (pour Outlook : 587) :"
+read smtp_port
+echo "Veuillez rentrer l'adresse email de l'expéditeur :"
+read from_email
+echo "Veuillez saisir le mot de passe de cette adresse e-mail :"
+read smtp_password
+
+# Demande des informations relatives au serveur
+echo "Veuillez saisir l'adresse IP du serveur :"
+read SERVER_IP
+echo "Veuillez saisir votre nom d'utilisateur :"
+read SERVER_USER
+echo "Veuillez rentrer le chemin vers votre clé SSH :"
+read SSH_KEY
+echo "Veuillez saisir le chemin vers le fichier csv contenant les informations des comptes :"
+read FILE
 
 # Démarrage de la tâche cron
 service cron start
@@ -113,7 +101,6 @@ ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" mkdir "/home/saves"
 ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chown "$SERVER_USER:$SERVER_USER" "/home/saves"
 ssh -n -i $SSH_KEY "$SERVER_USER@$SERVER_IP" chmod 777 "/home/saves"
 
-eclipse_install
 
 # Boucle de lecture sur le fichier account.csv (excepté la première)
 tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
@@ -183,6 +170,8 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
 done 
 
 firewall_setup
+
+eclipse_install
 
 config_nextcloud
 
