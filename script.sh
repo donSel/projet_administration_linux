@@ -142,6 +142,10 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     # Création d'un lien symbolique vers eclipse dans le dossier home de l'utilisateur
     ln -s /usr/local/share/eclipse/eclipse "/home/$username/eclipse"
     
+    # Création d'un compte Nextcloud pour chaque utilisateur
+    export OC_PASS=$password
+    /snap/bin/nextcloud.occ user:add --password-from-env --display-name="$name $surname" $login 
+    
     # --------------------------------------- Envoi de mails d'instruction aux utilisateurs ---------------------------------------
     subject="Votre compte a été créé"
     
