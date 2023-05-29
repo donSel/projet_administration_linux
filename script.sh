@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# --------------------------------[FONNCTIONS]--------------------------------[
+# --------------------------------[FONCTIONS]--------------------------------[
 
 # Fonction de déploiement du pare-feu
 firewall_setup() {
@@ -39,29 +39,6 @@ eclipse_install() {
 
     # Création d'u lien symbolique vers l'exécutable d'Eclipse
     ln -s /usr/local/share/eclipse/eclipse /usr/local/bin/eclipse
-}
-
-# Fonction configurant installant et configurant Nextcloud
-config_nextcloud() {
-    # Variables d'identifiant et mdp de l'administrateur pour la connexion au serveur Nextcloud
-    admin_login="nextcloud-admin"
-    admin_passwd="N3x+ClOuD"
-
-    # Installation de snapd
-    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "apt install snapd -y"
-    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install core"
-
-    # Installation de Nextcloud
-    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install nextcloud"
-    
-    # Lancement de Nextcloud 
-    ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "/snap/bin/nextcloud.manual-install $admin_login $admin_passwd"
-
-    # Création de l'exécutable pour lancer le tunnel sur le serveur Nextcloud
-    touch /home/tunnel_nextcloud
-    chmod 755 /home/tunnel_nextcloud
-    echo "#!/bin/bash" >> /home/tunnel_nextcloud
-    echo "ssh -L 4242:$SERVER_IP:80 $SERVER_USER@$SERVER_IP" >> /home/tunnel_nextcloud
 }
 
 # --------------------------------[END_FONNCTIONS]--------------------------------[
@@ -105,7 +82,27 @@ firewall_setup
 
 eclipse_install
 
-config_nextcloud
+# --------------------------------------- configuration et installantion de Nextcloud ---------------------------------------
+
+# Variables d'identifiant et mdp de l'administrateur pour la connexion au serveur Nextcloud
+admin_login="nextcloud-admin"
+admin_passwd="N3x+ClOuD"
+
+# Installation de snapd
+ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "apt install snapd -y"
+ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install core"
+
+# Installation de Nextcloud
+ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "snap install nextcloud"
+
+# Lancement de Nextcloud 
+ssh -i $SSH_KEY $SERVER_USER@$SERVER_IP "/snap/bin/nextcloud.manual-install $admin_login $admin_passwd"
+
+# Création de l'exécutable pour lancer le tunnel sur le serveur Nextcloud
+touch /home/tunnel_nextcloud
+chmod 755 /home/tunnel_nextcloud
+echo "#!/bin/bash" >> /home/tunnel_nextcloud
+echo "ssh -L 4242:$SERVER_IP:80 $SERVER_USER@$SERVER_IP" >> /home/tunnel_nextcloud
 
 # Boucle de lecture sur le fichier account.csv (excepté la première)
 tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
@@ -152,6 +149,7 @@ tail -n +2 "$FILE" | while IFS=';' read -r name surname mail password; do
     /snap/bin/nextcloud.occ user:add --password-from-env --display-name="$name $surname" $login 
     
     # --------------------------------------- Envoi de mails d'instruction aux utilisateurs ---------------------------------------
+    
     subject="Votre compte a été créé"
     
     # Création du corps du mail
