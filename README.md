@@ -1,6 +1,6 @@
 # projet_administration_linux
 
-Ce projet à pour objectif de déployer des comptes pour un ensembles d'utilisateurs (dont les informations sont contenues dans le fichier ```account.csv```)
+Ce projet à pour objectif de déployer des comptes pour un ensemble d'utilisateurs (dont les informations sont contenues dans le fichier ```account.csv```)
 grâce à un unique script bash.
 
 La création de compte comprend :
@@ -18,7 +18,7 @@ La création de compte comprend :
 
 - Le script ```script.sh``` sera lancé depuis une machine locale qui est connectée à la machine SSH (10.38.40.100) en tant que root :
 ```sudo ./script.sh```
-- Le script ```prep.sh``` permet simplement de supprimer les utilisateurs et dossiers créés par le script ```script.sh``` sur la machine locale excepté l'utilisateur "isen"
+- Le script ```prep.sh``` permet simplement de supprimer les utilisateurs et dossiers créés par le script ```script.sh``` sur la machine locale excepté ceux de l'utilisateur "isen"
 
 # Rétablissement de seauvegarde
 
